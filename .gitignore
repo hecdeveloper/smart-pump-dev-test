@@ -26,3 +26,16 @@ node_modules
 
 # Users Environment Variables
 .lock-wscript
+
+# Node.js
+/api/node_modules/
+# React (Frontend)
+client/node_modules/
+client/build/
+
+# Lowdb database
+/data/users.json
+
+# configs
+*.log
+.env
