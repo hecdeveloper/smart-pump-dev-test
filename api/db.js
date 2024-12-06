@@ -1,9 +1,16 @@
-const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
+const path = require('path');
 
-const adapter = new FileSync('../data/users.json');
-const db = low(adapter);
+// Function to dynamically load lowdb
+async function loadLowdb() {
+  const { Low, JSONFile } = await import('lowdb');
+  
+  // Define the path to the JSON file in the `data` folder
+  const file = path.join(__dirname, '../data/users.json');
+  const adapter = new JSONFile(file);
+  const db = new Low(adapter);
 
-db.defaults({users: []}).write();
+  await db.read(); // Load the data from the JSON file
+  return db;
+}
 
-module.exports = db;
+module.exports = loadLowdb;

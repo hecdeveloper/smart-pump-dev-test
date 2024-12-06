@@ -1,29 +1,75 @@
 const express = require('express');
-const bcrypt = require ('bcrypt');
 const jwt = require('jsonwebtoken');
+const loadLowdb = require('../db'); // Import the async loader
 
 const router = express.Router();
 
+// Login route
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
 
-//login
-router.post('/login', (req,res) => {
-    const {email, password} = req.body;
-    const user = db .get('users').find({email}).value();
-    if(user && bcrypt.compareSync(password, user.password)){
-        const token = jwt.sign({id: user.id}, 'secretKey', {expiresIn: '1h'});
-    }
-    return res.status(401).send('Invalid credentials');
-})
+  // Load the database dynamically
+  const db = await loadLowdb();
+  const user = db.data.users.find((u) => u.email === email && u.password === password);
 
-//profile
-router.get('/profile', (req, res) =>{
-    const token = req.headers.authorization;
-    try{
-        const decoded = jwt.verify(token, 'secretKey');
-        const user = db.get('users').find({id: decoded.id}).value();
-    }catch {
-        res.status(401).send('Unauthorized');
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  const token = jwt.sign({ id: user._id }, 'your-secret-key', { expiresIn: '1h' });
+  res.json({ token, user });
+});
+
+// Profile retrieval route
+router.get('/profile', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'your-secret-key');
+    const db = await loadLowdb();
+    const user = db.data.users.find((u) => u._id === decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-})
+
+    res.json(user);
+  } catch {
+    res.status(403).json({ error: 'Invalid token' });
+  }
+});
+
+// Profile update route
+router.put('/profile', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'your-secret-key');
+    const db = await loadLowdb();
+    const user = db.data.users.find((u) => u._id === decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { name, email } = req.body;
+    user.name.first = name?.first || user.name.first;
+    user.name.last = name?.last || user.name.last;
+    user.email = email || user.email;
+
+    await db.write();
+    res.json({ message: 'Profile updated successfully', user });
+  } catch {
+    res.status(403).json({ error: 'Invalid token' });
+  }
+});
 
 module.exports = router;
