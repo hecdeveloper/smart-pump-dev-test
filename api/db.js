@@ -1,16 +1,34 @@
 const path = require('path');
+const fs = require('fs');
 
-// Function to dynamically load lowdb
 async function loadLowdb() {
-  const { Low, JSONFile } = await import('lowdb');
-  
-  // Define the path to the JSON file in the `data` folder
-  const file = path.join(__dirname, '../data/users.json');
-  const adapter = new JSONFile(file);
-  const db = new Low(adapter);
+  try {
+    const { Low } = await import('lowdb');
+    const { JSONFile } = await import('lowdb/node');
+    
 
-  await db.read(); // Load the data from the JSON file
-  return db;
+    const file = path.join(__dirname, '../data/users.json');
+    console.log('Database path:', file);
+
+//read provided file
+    let defaultData = { users: [] };
+    if (fs.existsSync(file)) {
+      const fileContent = fs.readFileSync(file, 'utf-8');
+      if (fileContent) {
+        defaultData = JSON.parse(fileContent);
+      }
+    }
+    
+    const adapter = new JSONFile(file);
+    const db = new Low(adapter, defaultData);
+
+    await db.read();
+    console.log(`Database loaded successfully with ${db.data.users.length} users`);
+    return db;
+  } catch (error) {
+    console.error('Error loading database:', error);
+    throw error;
+  }
 }
 
 module.exports = loadLowdb;
