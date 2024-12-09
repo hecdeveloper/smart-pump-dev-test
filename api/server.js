@@ -6,9 +6,9 @@ const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
-// CORS configuration
+// CORS configuration with Netlify support
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: ['https://smart-pump-dev-test.netlify.app', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
